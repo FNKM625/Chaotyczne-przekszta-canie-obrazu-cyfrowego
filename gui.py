@@ -1,3 +1,4 @@
+# gui.py
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
@@ -14,8 +15,8 @@ class ProjektGUI:
         os.makedirs(self.folder_temp, exist_ok=True)
         
         self.sciezka_oryginal = None
-        self.sciezka_zaszyfrowany = os.path.join(self.folder_temp, "zaszyfrowany.png")
-        self.sciezka_odszyfrowany = os.path.join(self.folder_temp, "odszyfrowany.png")
+        self.sciezka_zaszyfrowany = os.path.join(self.folder_temp, "przeksztalcony.png")
+        self.sciezka_odszyfrowany = os.path.join(self.folder_temp, "odtworzony.png")
 
         self.stworz_panel_sterowania()
         self.stworz_panel_obrazow()
@@ -44,13 +45,7 @@ class ProjektGUI:
 
         btn_reset = tk.Button(frame_sterowanie, text="Reset", command=self.resetuj_panele, bg="lightblue")
         btn_reset.pack(side=tk.LEFT, padx=5)
-
-    def resetuj_panele(self):
-        self.sciezka_oryginal = None
-        self.panel_oryginal.config(image="", text="Oryginał\n(Brak obrazu)", bg="lightgray")
-        self.panel_zaszyfrowany.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
-        self.panel_odszyfrowany.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
-
+        
     def stworz_panel_obrazow(self):
         frame_obrazy = tk.Frame(self.root)
         frame_obrazy.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
@@ -64,7 +59,13 @@ class ProjektGUI:
         self.panel_odszyfrowany = tk.Label(frame_obrazy, text="Odtworzony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
         self.panel_odszyfrowany.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
 
-    # --- FUNKCJE LOGICZNE ---
+    # --- FUNKCJE BUTTON ---
+
+    def resetuj_panele(self):
+        self.sciezka_oryginal = None
+        self.panel_oryginal.config(image="", text="Oryginał\n(Brak obrazu)", bg="lightgray")
+        self.panel_zaszyfrowany.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
+        self.panel_odszyfrowany.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
 
     def wczytaj_obraz(self):
         sciezka = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
@@ -72,18 +73,38 @@ class ProjektGUI:
             self.sciezka_oryginal = sciezka
             self.wyswietl_obraz(self.sciezka_oryginal, self.panel_oryginal)
 
+    # --- FUNKCJE LOGICZNE ---
+
+    def wyswietl_obraz(self, sciezka, panel):
+        img = Image.open(sciezka)
+        img.thumbnail((300, 300))
+        img_tk = ImageTk.PhotoImage(img)
+        panel.config(image=img_tk, text="")
+        panel.image = img_tk
+        
+    def key_validation(self, key):
+        try:
+            key_int = int(key)
+            return key_int
+        except ValueError as e:
+            messagebox.showerror("Błąd", "Nieprawidłowy klucz! Wprowadź liczbę całkowitą różną od zera.")
+            return None
+        
+    # --- FUNKCJE ETAP1 ---
+
     def akcja_scramble(self):
         if not self.sciezka_oryginal:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
         
-        klucz = int(self.pole_klucz.get())
+        klucz = self.key_validation(self.pole_klucz.get())
+        if klucz is None:
+            return
         etap = self.wybor_etapu.get()
 
         if etap == "1":
-            etap1.naive_scrambling(self.sciezka_oryginal, self.sciezka_zaszyfrowany, klucz)
+            etap1.naive_scrambling(self.sciezka_oryginal, self.sciezka_zaszyfrowany, klucz, shift_info=1)
             self.wyswietl_obraz(self.sciezka_zaszyfrowany, self.panel_zaszyfrowany)
-            print("Zakończono Scramble.")
 
     def akcja_unscramble(self):
         if not self.sciezka_oryginal:
@@ -93,20 +114,20 @@ class ProjektGUI:
             messagebox.showwarning("Błąd", "Nie ma obrazu do odszyfrowania! Najpierw użyj opcji Scramble.")
             return
         
-        klucz = int(self.pole_klucz.get())
+        klucz = self.key_validation(self.pole_klucz.get())
+        if klucz is None:
+            return        
         etap = self.wybor_etapu.get()
 
         if etap == "1":
-            etap1.naive_scrambling(self.sciezka_zaszyfrowany, self.sciezka_odszyfrowany, -klucz)
+            etap1.naive_scrambling(self.sciezka_zaszyfrowany, self.sciezka_odszyfrowany, klucz, shift_info=-1)
             self.wyswietl_obraz(self.sciezka_odszyfrowany, self.panel_odszyfrowany)
-            print("Zakończono Unscramble.")
 
-    def wyswietl_obraz(self, sciezka, panel):
-        img = Image.open(sciezka)
-        img.thumbnail((300, 300))
-        img_tk = ImageTk.PhotoImage(img)
-        panel.config(image=img_tk, text="")
-        panel.image = img_tk
+    # --- FUNKCJE ETAP2 ---
+    
+    
+    
+    # --- FUNKCJE ETAP3 ---
 
 # Uruchomienie aplikacji
 if __name__ == "__main__":
