@@ -1,8 +1,9 @@
 # gui.py
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, scrolledtext
 from PIL import Image, ImageTk
-import etap1
+import numpy as np
+import etap1, etap2
 import os
 
 class ProjektGUI:
@@ -14,69 +15,100 @@ class ProjektGUI:
         self.folder_temp = "temp"
         os.makedirs(self.folder_temp, exist_ok=True)
         
-        self.sciezka_oryginal = None
-        self.sciezka_zaszyfrowany = os.path.join(self.folder_temp, "przeksztalcony.png")
-        self.sciezka_odszyfrowany = os.path.join(self.folder_temp, "odtworzony.png")
+        self.path_original = None
+        self.path_scrambled = os.path.join(self.folder_temp, "przeksztalcony.png")
+        self.path_unscrambled = os.path.join(self.folder_temp, "odtworzony.png")
 
-        self.stworz_panel_sterowania()
-        self.stworz_panel_obrazow()
+        self.create_control_panel()
+        self.create_image_panels()
 
-    def stworz_panel_sterowania(self):
-        frame_sterowanie = tk.Frame(self.root, pady=10)
-        frame_sterowanie.pack(side=tk.TOP, fill=tk.X)
+    def create_control_panel(self):
+        frame_control = tk.Frame(self.root, pady=10)
+        frame_control.pack(side=tk.TOP, fill=tk.X)
 
-        btn_wczytaj = tk.Button(frame_sterowanie, text="Wczytaj obraz", command=self.wczytaj_obraz)
-        btn_wczytaj.pack(side=tk.LEFT, padx=5)
+        btn_read = tk.Button(frame_control, text="Wczytaj obraz", command=self.btn_get_original_image)
+        btn_read.pack(side=tk.LEFT, padx=5)
 
-        tk.Label(frame_sterowanie, text="Etap:").pack(side=tk.LEFT, padx=5)
-        self.wybor_etapu = tk.StringVar(value="1")
-        tk.OptionMenu(frame_sterowanie, self.wybor_etapu, "1", "2", "3").pack(side=tk.LEFT)
+        tk.Label(frame_control, text="Etap:").pack(side=tk.LEFT, padx=5)
+        self.stage_selection = tk.StringVar(value="1")
+        tk.OptionMenu(frame_control, self.stage_selection, "1", "2", "3").pack(side=tk.LEFT)
 
-        tk.Label(frame_sterowanie, text="Klucz:").pack(side=tk.LEFT, padx=5)
-        self.pole_klucz = tk.Entry(frame_sterowanie, width=10)
-        self.pole_klucz.pack(side=tk.LEFT, padx=5)
-        self.pole_klucz.insert(0, "42")
+        tk.Label(frame_control, text="Klucz:").pack(side=tk.LEFT, padx=5)
+        self.key_entry = tk.Entry(frame_control, width=10)
+        self.key_entry.pack(side=tk.LEFT, padx=5)
+        self.key_entry.insert(0, "42")
 
-        btn_scramble = tk.Button(frame_sterowanie, text="Scramble", command=self.akcja_scramble, bg="lightcoral")
+        btn_scramble = tk.Button(frame_control, text="Scramble", command=self.action_scramble, bg="lightcoral")
         btn_scramble.pack(side=tk.LEFT, padx=5)
 
-        btn_unscramble = tk.Button(frame_sterowanie, text="Unscramble", command=self.akcja_unscramble, bg="lightgreen")
+        btn_unscramble = tk.Button(frame_control, text="Unscramble", command=self.action_unscramble, bg="lightgreen")
         btn_unscramble.pack(side=tk.LEFT, padx=5)
 
-        btn_reset = tk.Button(frame_sterowanie, text="Reset", command=self.resetuj_panele, bg="lightblue")
+        btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset, bg="lightblue")
         btn_reset.pack(side=tk.LEFT, padx=5)
         
-    def stworz_panel_obrazow(self):
-        frame_obrazy = tk.Frame(self.root)
-        frame_obrazy.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        btn_mapping = tk.Button(frame_control, text="Pokaż odwzorowania", command=self.btn_show_mapping)
+        btn_mapping.pack(side=tk.LEFT, padx=5)
+        
+    def create_image_panels(self):
+        frame_image = tk.Frame(self.root)
+        frame_image.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        self.panel_oryginal = tk.Label(frame_obrazy, text="Oryginał\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_oryginal.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+        self.panel_original = tk.Label(frame_image, text="Oryginał\n(Brak obrazu)", bg="lightgray", width=30, height=15)
+        self.panel_original.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
 
-        self.panel_zaszyfrowany = tk.Label(frame_obrazy, text="Przekształcony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_zaszyfrowany.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+        self.panel_scrambled = tk.Label(frame_image, text="Przekształcony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
+        self.panel_scrambled.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
 
-        self.panel_odszyfrowany = tk.Label(frame_obrazy, text="Odtworzony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_odszyfrowany.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+        self.panel_unscrambled = tk.Label(frame_image, text="Odtworzony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
+        self.panel_unscrambled.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
 
     # --- FUNKCJE BUTTON ---
+    def btn_reset(self):
+        self.path_original = None
+        self.panel_original.config(image="", text="Oryginał\n(Brak obrazu)", bg="lightgray")
+        self.panel_scrambled.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
+        self.panel_unscrambled.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
 
-    def resetuj_panele(self):
-        self.sciezka_oryginal = None
-        self.panel_oryginal.config(image="", text="Oryginał\n(Brak obrazu)", bg="lightgray")
-        self.panel_zaszyfrowany.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
-        self.panel_odszyfrowany.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
+    def btn_get_original_image(self):
+        path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
+        if path:
+            self.path_original = path
+            self.display_image(self.path_original, self.panel_original)
+            
+    def btn_show_mapping(self):
+        if not self.path_original:
+            messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
+            return
+        
+        key = self.key_validation(self.key_entry.get())
+        if key is None:
+            return
+        
+        stage = self.stage_selection.get()
+        
+        if stage == "1":
+            print("\n[Etap 1] Przykładowe przesunięcia na pierwszych 10 wierszach:")
+            
+        elif stage == "2":
+            img = Image.open(self.path_original)
+            imgarray = np.array(img)
+            originalshape = imgarray.shape
 
-    def wczytaj_obraz(self):
-        sciezka = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
-        if sciezka:
-            self.sciezka_oryginal = sciezka
-            self.wyswietl_obraz(self.sciezka_oryginal, self.panel_oryginal)
+            if len(originalshape) == 2:
+                flatpixels = imgarray.reshape(-1, 1)
+            else:
+                flatpixels = imgarray.reshape(-1, originalshape[2])
+
+            pixelcount = flatpixels.shape[0]
+
+            content = etap2.buildcomparisontext(pixelcount, key, count=10)
+            self.show_text_window("Etap 2 - Odwzorowania", content)
 
     # --- FUNKCJE LOGICZNE ---
 
-    def wyswietl_obraz(self, sciezka, panel):
-        img = Image.open(sciezka)
+    def display_image(self, path, panel):
+        img = Image.open(path)
         img.thumbnail((300, 300))
         img_tk = ImageTk.PhotoImage(img)
         panel.config(image=img_tk, text="")
@@ -87,47 +119,65 @@ class ProjektGUI:
             key_int = int(key)
             return key_int
         except ValueError as e:
-            messagebox.showerror("Błąd", "Nieprawidłowy klucz! Wprowadź liczbę całkowitą różną od zera.")
+            messagebox.showerror("Błąd", "Nieprawidłowy klucz! Wprowadź liczbę całkowitą.")
             return None
         
-    # --- FUNKCJE ETAP1 ---
-
-    def akcja_scramble(self):
-        if not self.sciezka_oryginal:
+    # --- FUNKCJE ETAPÓW ---
+    def action_scramble(self):
+        if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
         
-        klucz = self.key_validation(self.pole_klucz.get())
-        if klucz is None:
+        key = self.key_validation(self.key_entry.get())
+        if key is None:
             return
-        etap = self.wybor_etapu.get()
+        stage = self.stage_selection.get()
 
-        if etap == "1":
-            etap1.naive_scrambling(self.sciezka_oryginal, self.sciezka_zaszyfrowany, klucz, shift_info=1)
-            self.wyswietl_obraz(self.sciezka_zaszyfrowany, self.panel_zaszyfrowany)
+        if stage == "1":
+            etap1.naive_scrambling(self.path_original, self.path_scrambled, key)
+            self.display_image(self.path_scrambled, self.panel_scrambled)
+        elif stage == "2":
+            etap2.pure_permutation(self.path_original, self.path_scrambled, key)
+            self.display_image(self.path_scrambled, self.panel_scrambled)
 
-    def akcja_unscramble(self):
-        if not self.sciezka_oryginal:
+    def action_unscramble(self):
+        if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
-        if not os.path.exists(self.sciezka_zaszyfrowany):
+        if not os.path.exists(self.path_scrambled):
             messagebox.showwarning("Błąd", "Nie ma obrazu do odszyfrowania! Najpierw użyj opcji Scramble.")
             return
         
-        klucz = self.key_validation(self.pole_klucz.get())
-        if klucz is None:
+        key = self.key_validation(self.key_entry.get())
+        if key is None:
             return        
-        etap = self.wybor_etapu.get()
+        stage = self.stage_selection.get()
 
-        if etap == "1":
-            etap1.naive_scrambling(self.sciezka_zaszyfrowany, self.sciezka_odszyfrowany, klucz, shift_info=-1)
-            self.wyswietl_obraz(self.sciezka_odszyfrowany, self.panel_odszyfrowany)
+        if stage == "1":
+            etap1.naive_scrambling(self.path_scrambled, self.path_unscrambled, key, False)
+            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+        elif stage == "2":
+            etap2.pure_permutation(self.path_scrambled, self.path_unscrambled, key, False)
+            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+            
+    def show_text_window(self, title, content):
+        window = tk.Toplevel(self.root)
+        window.title(title)
+        window.geometry("700x500")
 
-    # --- FUNKCJE ETAP2 ---
-    
-    
-    
-    # --- FUNKCJE ETAP3 ---
+        frame = tk.Frame(window)
+        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        scrollbar = tk.Scrollbar(frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        text_widget = tk.Text(frame, wrap="word", font=("Consolas", 10), yscrollcommand=scrollbar.set)
+        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar.config(command=text_widget.yview)
+
+        text_widget.insert("1.0", content)
+        text_widget.config(state="disabled")
 
 # Uruchomienie aplikacji
 if __name__ == "__main__":
