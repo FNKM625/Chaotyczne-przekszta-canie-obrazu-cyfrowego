@@ -2,13 +2,11 @@
 import numpy as np
 from PIL import Image
 
-
 def generatepermutation(pixelcount, key):
     rng = np.random.default_rng(key)
     permutation = rng.permutation(pixelcount)
     inversepermutation = np.argsort(permutation)
     return permutation, inversepermutation
-
 
 def buildmappingtext(permutation, inversepermutation, key, count=10):
     lines = []
@@ -30,7 +28,6 @@ def buildmappingtext(permutation, inversepermutation, key, count=10):
         lines.append(f"P^-1(P({i})) = {inversepermutation[permutation[i]]}")
 
     return "\n".join(lines)
-
 
 def buildcomparisontext(pixelcount, key, count=10):
     permutation_key, inverse_key = generatepermutation(pixelcount, key)
@@ -70,7 +67,6 @@ def buildcomparisontext(pixelcount, key, count=10):
         lines.append(f"P^-1_key(P_key({i})+1) = {inverse_key1[(permutation_key[i]+1) % pixelcount]}")
 
     return "\n".join(lines)
-
 
 def purepermutation(inputpath, outputpath, key, encrypt=True):
     img = Image.open(inputpath)

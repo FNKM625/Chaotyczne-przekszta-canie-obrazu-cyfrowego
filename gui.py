@@ -87,18 +87,22 @@ class ProjektGUI:
         
         stage = self.stage_selection.get()
         
+        img = Image.open(self.path_original)
+        img_array = np.array(img)
+        
         if stage == "1":
-            print("\n[Etap 1] Przykładowe przesunięcia na pierwszych 10 wierszach:")
+            height, width = img_array.shape[:2]
+
+            content = etap1.buildcomparisontext(height, width, key, count=10)
+            self.show_text_window("Etap 1 - Przesunięcia", content)
             
         elif stage == "2":
-            img = Image.open(self.path_original)
-            imgarray = np.array(img)
-            originalshape = imgarray.shape
+            originalshape = img_array.shape
 
             if len(originalshape) == 2:
-                flatpixels = imgarray.reshape(-1, 1)
+                flatpixels = img_array.reshape(-1, 1)
             else:
-                flatpixels = imgarray.reshape(-1, originalshape[2])
+                flatpixels = img_array.reshape(-1, originalshape[2])
 
             pixelcount = flatpixels.shape[0]
 
