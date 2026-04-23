@@ -1,14 +1,65 @@
-# etap2.py
 import numpy as np
 from PIL import Image
+
 
 def generate_permutation(pixel_count, key):
     rng = np.random.default_rng(key)
     permutation = rng.permutation(pixel_count)
-    inversepermutation = np.argsort(permutation)
-    return permutation, inversepermutation
+    inverse_permutation = np.argsort(permutation)
+    return permutation, inverse_permutation
 
-def build_mapping_text(permutation, inversepermutation, key, count=10):
+
+def to_grayscale_2d(img_array):
+    if img_array.ndim == 2:
+        return img_array.astype(np.float64)
+    return np.mean(img_array.astype(np.float64), axis=2)
+
+
+def adjacent_pixel_correlation(img_array):
+    gray = to_grayscale_2d(img_array)
+
+    horizontal_x = gray[:, :-1].flatten()
+    horizontal_y = gray[:, 1:].flatten()
+
+    vertical_x = gray[:-1, :].flatten()
+    vertical_y = gray[1:, :].flatten()
+
+    corr_h = np.corrcoef(horizontal_x, horizontal_y)[0, 1]
+    corr_v = np.corrcoef(vertical_x, vertical_y)[0, 1]
+
+    return corr_h, corr_v
+
+
+def image_difference_metrics(img1, img2):
+    a = img1.astype(np.float64)
+    b = img2.astype(np.float64)
+
+    mad = np.mean(np.abs(a - b))
+    mse = np.mean((a - b) ** 2)
+
+    return mad, mse
+
+
+def apply_permutation_array(img_array, key, is_encrypt=True):
+    original_shape = img_array.shape
+
+    if len(original_shape) == 2:
+        flat_pixels = img_array.reshape(-1, 1)
+    else:
+        flat_pixels = img_array.reshape(-1, original_shape[2])
+
+    pixel_count = flat_pixels.shape[0]
+    permutation, inverse_permutation = generate_permutation(pixel_count, key)
+
+    if is_encrypt:
+        transformed_flat = flat_pixels[permutation]
+    else:
+        transformed_flat = flat_pixels[inverse_permutation]
+
+    return transformed_flat.reshape(original_shape)
+
+
+def build_mapping_text(permutation, inverse_permutation, key, count=10):
     lines = []
     limit = min(count, len(permutation))
 
@@ -20,18 +71,36 @@ def build_mapping_text(permutation, inversepermutation, key, count=10):
     lines.append("")
     lines.append("Przykładowe odwzorowania permutacji odwrotnej:")
     for i in range(limit):
-        lines.append(f"P^-1({i}) = {inversepermutation[i]}")
+        lines.append(f"P^-1({i}) = {inverse_permutation[i]}")
 
     lines.append("")
     lines.append("Sprawdzenie P^-1(P(i)) = i:")
     for i in range(limit):
-        lines.append(f"P^-1(P({i})) = {inversepermutation[permutation[i]]}")
+        lines.append(f"P^-1(P({i})) = {inverse_permutation[permutation[i]]}")
 
     return "\n".join(lines)
 
-def build_comparison_text(pixel_count, key, count=10):
+
+def build_comparison_text(img_array, key, count=10):
+    original_shape = img_array.shape
+
+    if len(original_shape) == 2:
+        flat_pixels = img_array.reshape(-1, 1)
+    else:
+        flat_pixels = img_array.reshape(-1, original_shape[2])
+
+    pixel_count = flat_pixels.shape[0]
+
     permutation_key, inverse_key = generate_permutation(pixel_count, key)
     permutation_key1, inverse_key1 = generate_permutation(pixel_count, key + 1)
+
+    scrambled_array = apply_permutation_array(img_array, key, True)
+    wrong_unscrambled_array = apply_permutation_array(scrambled_array, key + 1, False)
+
+    corr_orig_h, corr_orig_v = adjacent_pixel_correlation(img_array)
+    corr_scr_h, corr_scr_v = adjacent_pixel_correlation(scrambled_array)
+
+    mad_wrong, mse_wrong = image_difference_metrics(img_array, wrong_unscrambled_array)
 
     limit = min(count, pixel_count)
     lines = []
@@ -39,7 +108,7 @@ def build_comparison_text(pixel_count, key, count=10):
     lines.append("ETAP 2 - CZYSTA PERMUTACJA")
     lines.append("")
     lines.append(f"Klucz poprawny: {key}")
-    lines.append(f"Klucz błędny:   {key + 1}")
+    lines.append(f"Klucz błędny: {key + 1}")
     lines.append("")
 
     lines.append("1. Permutacja dla key")
@@ -62,34 +131,25 @@ def build_comparison_text(pixel_count, key, count=10):
         lines.append(f"P^-1_key+1(P_key({i})) = {inverse_key1[permutation_key[i]]}")
 
     lines.append("")
-    lines.append("5. Próba odtworzenia złym parametrem")
-    for i in range(limit):
-        lines.append(f"P^-1_key(P_key({i})+1) = {inverse_key1[(permutation_key[i]+1) % pixel_count]}")
+    lines.append("5. Korelacja sąsiednich pikseli")
+    lines.append(f"Przed scramblingiem - pozioma: {corr_orig_h:.6f}")
+    lines.append(f"Przed scramblingiem - pionowa: {corr_orig_v:.6f}")
+    lines.append(f"Po scramblingu - pozioma: {corr_scr_h:.6f}")
+    lines.append(f"Po scramblingu - pionowa: {corr_scr_v:.6f}")
+
+    lines.append("")
+    lines.append("6. Różnica obrazu przy unscramblingu błędnym kluczem")
+    lines.append(f"Mean Absolute Difference (MAD): {mad_wrong:.6f}")
+    lines.append(f"Mean Squared Error (MSE): {mse_wrong:.6f}")
 
     return "\n".join(lines)
+
 
 def pure_permutation(input_path, output_path, key, is_encrypt=True):
     img = Image.open(input_path)
     img_array = np.array(img)
-    original_shape = img_array.shape
 
-    if len(original_shape) == 2:
-        flat_pixels = img_array.reshape(-1, 1)
-    else:
-        flat_pixels = img_array.reshape(-1, original_shape[2])
-
-    pixel_count = flat_pixels.shape[0]
-    permutation, inverse_permutation = generate_permutation(pixel_count, key)
-
-    if is_encrypt:
-        transformed_flat = flat_pixels[permutation]
-    else:
-        transformed_flat = flat_pixels[inverse_permutation]
-
-    if len(original_shape) == 2:
-        result_array = transformed_flat.reshape(original_shape[0], original_shape[1])
-    else:
-        result_array = transformed_flat.reshape(original_shape)
+    result_array = apply_permutation_array(img_array, key, is_encrypt)
 
     result_img = Image.fromarray(result_array)
     result_img.save(output_path)

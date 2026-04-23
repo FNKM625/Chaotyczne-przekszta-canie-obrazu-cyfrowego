@@ -110,7 +110,7 @@ class ProjektGUI:
         if stage == "1":
             height, width = img_array.shape[:2]
             
-            content = etap1.build_comparison_text(height, width, key, count=10)
+            content = etap1.build_comparison_text(img_array, key, count=10)
             self.show_text_window("Etap 1 - Przesunięcia", content)
             
         elif stage == "2" or stage == "3":
@@ -124,11 +124,11 @@ class ProjektGUI:
             pixelcount = flatpixels.shape[0]
             
             if stage == "2":
-                content = etap2.build_comparison_text(pixelcount, key, count=10)
+                content = etap2.build_comparison_text(img_array, key, count=10)
                 self.show_text_window("Etap 2 - Odwzorowania", content)
             
             elif stage == "3":
-                content = etap3.build_comparison_text(pixelcount, key, count=10)
+                content = etap3.build_comparison_text(img_array, key, count=10)
                 self.show_text_window("Etap 3 - Hybryda", content)
 
     def btn_save_image(self):
