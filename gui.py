@@ -1,10 +1,11 @@
 # gui.py
-import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
+from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
+from datetime import datetime
+import tkinter as tk
 import numpy as np
 import etap1, etap2, etap3
-import os
+import os, shutil
 
 class ProjektGUI:
     def __init__(self, root):
@@ -14,10 +15,13 @@ class ProjektGUI:
 
         self.folder_temp = "temp"
         os.makedirs(self.folder_temp, exist_ok=True)
-        
         self.path_original = None
         self.path_scrambled = os.path.join(self.folder_temp, "przeksztalcony.png")
         self.path_unscrambled = os.path.join(self.folder_temp, "odtworzony.png")
+        
+        self.folder_save = "save"
+        os.makedirs(self.folder_save, exist_ok=True)
+        self.folder_save = os.path.join(self.folder_save, "")
 
         self.create_control_panel()
         self.create_image_panels()
@@ -40,15 +44,18 @@ class ProjektGUI:
 
         btn_scramble = tk.Button(frame_control, text="Scramble", command=self.action_scramble, bg="lightcoral")
         btn_scramble.pack(side=tk.LEFT, padx=5)
-
+            
         btn_unscramble = tk.Button(frame_control, text="Unscramble", command=self.action_unscramble, bg="lightgreen")
         btn_unscramble.pack(side=tk.LEFT, padx=5)
-
+ 
         btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset, bg="lightblue")
         btn_reset.pack(side=tk.LEFT, padx=5)
         
         btn_mapping = tk.Button(frame_control, text="Pokaż odwzorowania", command=self.btn_show_mapping)
         btn_mapping.pack(side=tk.LEFT, padx=5)
+        
+        btn_save_image = tk.Button(frame_control, text="Zapisz obraz", command=self.btn_save_image, bg="lightblue")
+        btn_save_image.pack(side=tk.LEFT, padx=5)
         
     def create_image_panels(self):
         frame_image = tk.Frame(self.root)
@@ -114,8 +121,20 @@ class ProjektGUI:
                 content = etap3.build_comparison_text(pixelcount, key, count=10)
                 self.show_text_window("Etap 3 - Hybryda", content)
 
+    def btn_save_image(self):
+        if not os.path.exists(self.path_scrambled):
+            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Scramble.")
+            return
+        if not os.path.exists(self.path_unscrambled):
+            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Unscramble.")
+            return
+        
+        actual_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        self.save_image(self.path_scrambled, "przeksztalcony", actual_time)
+        self.save_image(self.path_unscrambled, "odtworzony", actual_time)
+        
     # --- FUNKCJE LOGICZNE ---
-
     def display_image(self, path, panel):
         img = Image.open(path)
         img.thumbnail((300, 300))
@@ -131,6 +150,17 @@ class ProjektGUI:
             messagebox.showerror("Błąd", "Nieprawidłowy klucz! Wprowadź liczbę całkowitą.")
             return None
         
+    def save_image(self, source_path, default_name, actual_time):
+        default_filename = f"{default_name}_{actual_time}.png"
+
+        save_path = filedialog.asksaveasfilename(initialdir=self.folder_save, initialfile=default_filename, defaultextension=".png", filetypes=[("PNG files", "*.png")])
+        if save_path:
+            try:
+                shutil.copy(source_path, save_path)
+                messagebox.showinfo("Sukces", f"Obraz zapisany jako: {save_path}")
+            except Exception as e:
+                messagebox.showerror("Błąd", f"Nie można zapisać obrazu: {e}")
+    
     # --- FUNKCJE ETAPÓW ---
     def action_scramble(self):
         if not self.path_original:

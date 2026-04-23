@@ -2,7 +2,6 @@ import numpy as np
 from PIL import Image
 from etap2 import generate_permutation as gperm
 
-
 def generate_substitution_value(key):
     return (key * 7 + 31) % 256
 
