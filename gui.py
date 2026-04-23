@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 from PIL import Image, ImageTk
 import numpy as np
-import etap1, etap2
+import etap1, etap2, etap3
 import os
 
 class ProjektGUI:
@@ -92,22 +92,27 @@ class ProjektGUI:
         
         if stage == "1":
             height, width = img_array.shape[:2]
-
-            content = etap1.buildcomparisontext(height, width, key, count=10)
+            
+            content = etap1.build_comparison_text(height, width, key, count=10)
             self.show_text_window("Etap 1 - Przesunięcia", content)
             
-        elif stage == "2":
+        elif stage == "2" or stage == "3":
             originalshape = img_array.shape
-
+            
             if len(originalshape) == 2:
                 flatpixels = img_array.reshape(-1, 1)
             else:
                 flatpixels = img_array.reshape(-1, originalshape[2])
 
             pixelcount = flatpixels.shape[0]
-
-            content = etap2.buildcomparisontext(pixelcount, key, count=10)
-            self.show_text_window("Etap 2 - Odwzorowania", content)
+            
+            if stage == "2":
+                content = etap2.build_comparison_text(pixelcount, key, count=10)
+                self.show_text_window("Etap 2 - Odwzorowania", content)
+            
+            elif stage == "3":
+                content = etap3.build_comparison_text(pixelcount, key, count=10)
+                self.show_text_window("Etap 3 - Hybryda", content)
 
     # --- FUNKCJE LOGICZNE ---
 
@@ -143,7 +148,10 @@ class ProjektGUI:
         elif stage == "2":
             etap2.pure_permutation(self.path_original, self.path_scrambled, key)
             self.display_image(self.path_scrambled, self.panel_scrambled)
-
+        elif stage == "3":
+            etap3.hybrid_scrambling(self.path_original, self.path_scrambled, key)
+            self.display_image(self.path_scrambled, self.panel_scrambled)
+            
     def action_unscramble(self):
         if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
@@ -158,12 +166,15 @@ class ProjektGUI:
         stage = self.stage_selection.get()
 
         if stage == "1":
-            etap1.naive_scrambling(self.path_scrambled, self.path_unscrambled, key, False)
+            etap1.naive_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
             self.display_image(self.path_unscrambled, self.panel_unscrambled)
         elif stage == "2":
-            etap2.pure_permutation(self.path_scrambled, self.path_unscrambled, key, False)
+            etap2.pure_permutation(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
             self.display_image(self.path_unscrambled, self.panel_unscrambled)
-            
+        elif stage == "3":
+            etap3.hybrid_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
+            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+
     def show_text_window(self, title, content):
         window = tk.Toplevel(self.root)
         window.title(title)

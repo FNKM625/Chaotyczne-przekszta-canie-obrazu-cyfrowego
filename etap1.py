@@ -5,7 +5,7 @@ from PIL import Image
 def calculate_shift(row_index, key, width):
     return (key + row_index * (key % 10 + 1)) % width
 
-def buildcomparisontext(height, width, key, count=10):
+def build_comparison_text(height, width, key, count=10):
     limit = min(count, height)
     lines = []
 
@@ -64,6 +64,6 @@ def naive_scrambling(input_path, output_path, key, is_encrypt = True):
     result_img = Image.fromarray(result_array)
     result_img.save(output_path)
     if is_encrypt:
-        print(f"[Etap 1] Zaszyfrowano: {input_path} -> {output_path}")
+        print(f"[Etap 1] Scrambling zakończony: {input_path} -> {output_path}, klucz = {key}")
     else:
-        print(f"[Etap 1] Odszyfrowano: {input_path} -> {output_path}")
+        print(f"[Etap 1] Unscrambling zakończony: {input_path} -> {output_path}, klucz = {key}")

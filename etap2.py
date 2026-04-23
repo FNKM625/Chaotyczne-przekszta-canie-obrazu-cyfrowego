@@ -2,13 +2,13 @@
 import numpy as np
 from PIL import Image
 
-def generatepermutation(pixelcount, key):
+def generate_permutation(pixel_count, key):
     rng = np.random.default_rng(key)
-    permutation = rng.permutation(pixelcount)
+    permutation = rng.permutation(pixel_count)
     inversepermutation = np.argsort(permutation)
     return permutation, inversepermutation
 
-def buildmappingtext(permutation, inversepermutation, key, count=10):
+def build_mapping_text(permutation, inversepermutation, key, count=10):
     lines = []
     limit = min(count, len(permutation))
 
@@ -29,11 +29,11 @@ def buildmappingtext(permutation, inversepermutation, key, count=10):
 
     return "\n".join(lines)
 
-def buildcomparisontext(pixelcount, key, count=10):
-    permutation_key, inverse_key = generatepermutation(pixelcount, key)
-    permutation_key1, inverse_key1 = generatepermutation(pixelcount, key + 1)
+def build_comparison_text(pixel_count, key, count=10):
+    permutation_key, inverse_key = generate_permutation(pixel_count, key)
+    permutation_key1, inverse_key1 = generate_permutation(pixel_count, key + 1)
 
-    limit = min(count, pixelcount)
+    limit = min(count, pixel_count)
     lines = []
 
     lines.append("ETAP 2 - CZYSTA PERMUTACJA")
@@ -64,37 +64,37 @@ def buildcomparisontext(pixelcount, key, count=10):
     lines.append("")
     lines.append("5. Próba odtworzenia złym parametrem")
     for i in range(limit):
-        lines.append(f"P^-1_key(P_key({i})+1) = {inverse_key1[(permutation_key[i]+1) % pixelcount]}")
+        lines.append(f"P^-1_key(P_key({i})+1) = {inverse_key1[(permutation_key[i]+1) % pixel_count]}")
 
     return "\n".join(lines)
 
-def purepermutation(inputpath, outputpath, key, encrypt=True):
-    img = Image.open(inputpath)
-    imgarray = np.array(img)
-    originalshape = imgarray.shape
+def pure_permutation(input_path, output_path, key, is_encrypt=True):
+    img = Image.open(input_path)
+    img_array = np.array(img)
+    original_shape = img_array.shape
 
-    if len(originalshape) == 2:
-        flatpixels = imgarray.reshape(-1, 1)
+    if len(original_shape) == 2:
+        flat_pixels = img_array.reshape(-1, 1)
     else:
-        flatpixels = imgarray.reshape(-1, originalshape[2])
+        flat_pixels = img_array.reshape(-1, original_shape[2])
 
-    pixelcount = flatpixels.shape[0]
-    permutation, inversepermutation = generatepermutation(pixelcount, key)
+    pixel_count = flat_pixels.shape[0]
+    permutation, inverse_permutation = generate_permutation(pixel_count, key)
 
-    if encrypt:
-        transformedflat = flatpixels[permutation]
+    if is_encrypt:
+        transformed_flat = flat_pixels[permutation]
     else:
-        transformedflat = flatpixels[inversepermutation]
+        transformed_flat = flat_pixels[inverse_permutation]
 
-    if len(originalshape) == 2:
-        resultarray = transformedflat.reshape(originalshape[0], originalshape[1])
+    if len(original_shape) == 2:
+        result_array = transformed_flat.reshape(original_shape[0], original_shape[1])
     else:
-        resultarray = transformedflat.reshape(originalshape)
+        result_array = transformed_flat.reshape(original_shape)
 
-    resultimg = Image.fromarray(resultarray)
-    resultimg.save(outputpath)
+    result_img = Image.fromarray(result_array)
+    result_img.save(output_path)
 
-    if encrypt:
-        print(f"[Etap 2] Scrambling zakończony: {inputpath} -> {outputpath}, klucz = {key}")
+    if is_encrypt:
+        print(f"[Etap 2] Scrambling zakończony: {input_path} -> {output_path}, klucz = {key}")
     else:
-        print(f"[Etap 2] Unscrambling zakończony: {inputpath} -> {outputpath}, klucz = {key}")
+        print(f"[Etap 2] Unscrambling zakończony: {input_path} -> {output_path}, klucz = {key}")
