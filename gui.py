@@ -69,16 +69,73 @@ class ProjektGUI:
         
     def create_image_panels(self):
         frame_image = tk.Frame(self.root)
-        frame_image.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        frame_image.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.panel_original = tk.Label(frame_image, text="Oryginał\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_original.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+        panel_width = 300
+        panel_height = 320
 
-        self.panel_scrambled = tk.Label(frame_image, text="Przekształcony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_scrambled.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+    # Oryginał
+        self.frame_original = tk.LabelFrame(
+            frame_image,
+            text="Oryginał",
+            bd=2,
+            relief="solid",
+            width=panel_width,
+            height=panel_height,
+            font=("Arial", 11, "bold"),
+            labelanchor="n"
+        )
+        self.frame_original.pack(side=tk.LEFT, expand=True, padx=10, pady=10)
+        self.frame_original.pack_propagate(False)
 
-        self.panel_unscrambled = tk.Label(frame_image, text="Odtworzony\n(Brak obrazu)", bg="lightgray", width=30, height=15)
-        self.panel_unscrambled.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=5, pady=5)
+        self.panel_original = tk.Label(
+            self.frame_original,
+            text="Brak obrazu",
+            bg="lightgray"
+        )
+        self.panel_original.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Scrambled
+        self.frame_scrambled = tk.LabelFrame(
+            frame_image,
+            text="Scrambled",
+            bd=2,
+            relief="solid",
+            width=panel_width,
+            height=panel_height,
+            font=("Arial", 11, "bold"),
+            labelanchor="n"
+        )
+        self.frame_scrambled.pack(side=tk.LEFT, expand=True, padx=10, pady=10)
+        self.frame_scrambled.pack_propagate(False)
+
+        self.panel_scrambled = tk.Label(
+            self.frame_scrambled,
+            text="Brak obrazu",
+            bg="lightgray"
+        )
+        self.panel_scrambled.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Unscrambled
+        self.frame_unscrambled = tk.LabelFrame(
+            frame_image,
+            text="Unscrambled",
+            bd=2,
+            relief="solid",
+            width=panel_width,
+            height=panel_height,
+            font=("Arial", 11, "bold"),
+            labelanchor="n"
+        )
+        self.frame_unscrambled.pack(side=tk.LEFT, expand=True, padx=10, pady=10)
+        self.frame_unscrambled.pack_propagate(False)
+
+        self.panel_unscrambled = tk.Label(
+            self.frame_unscrambled,
+            text="Brak obrazu",
+            bg="lightgray"
+        )
+        self.panel_unscrambled.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     # --- FUNKCJE BUTTON ---
     def btn_reset(self):
