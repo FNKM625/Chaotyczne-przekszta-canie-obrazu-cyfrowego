@@ -30,6 +30,16 @@ class ProjektGUI:
         frame_control = tk.Frame(self.root, pady=10)
         frame_control.pack(side=tk.TOP, fill=tk.X)
 
+        try:
+            img_logo = Image.open("UWB.png")
+            img_logo.thumbnail((40, 40)) 
+            self.logo_tk_panel = ImageTk.PhotoImage(img_logo)
+            
+            label_logo = tk.Label(frame_control, image=self.logo_tk_panel)
+            label_logo.pack(side=tk.LEFT, padx=10)
+        except Exception:
+            pass
+        
         btn_read = tk.Button(frame_control, text="Wczytaj obraz", command=self.btn_get_original_image)
         btn_read.pack(side=tk.LEFT, padx=5)
 
