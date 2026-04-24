@@ -12,6 +12,7 @@ class ProjektGUI:
         self.root = root
         self.root.title("Projekt M-II: Chaotyczne przekształcanie obrazu")
         self.root.geometry("1300x600")
+        self.root.minsize(1300, 600)
 
         self.folder_temp = "temp"
         shutil.rmtree(self.folder_temp, ignore_errors=True)
@@ -34,8 +35,10 @@ class ProjektGUI:
 
         try:
             img_logo = Image.open("UWB.png")
-            img_logo.thumbnail((100,100))
-            img_logo = img_logo.resize((60,40)) 
+            img_h = img_logo.height
+            img_w = img_logo.width
+            img_scale = 0.5
+            img_logo = img_logo.resize((int(img_w * img_scale), int(img_h * img_scale)))
             self.logo_tk_panel = ImageTk.PhotoImage(img_logo)
             
             label_logo = tk.Label(frame_control, image=self.logo_tk_panel)

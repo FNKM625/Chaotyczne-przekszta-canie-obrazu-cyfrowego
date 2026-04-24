@@ -3,10 +3,20 @@ from PIL import Image
 
 
 def generate_permutation(pixel_count, key):
-    rng = np.random.default_rng(key)
-    permutation = rng.permutation(pixel_count)
+    np.random.seed(key)
+
+    permutation = np.arange(pixel_count)
+    permutation = knuth_shuffle(pixel_count, permutation)
+    
     inverse_permutation = np.argsort(permutation)
     return permutation, inverse_permutation
+
+
+def knuth_shuffle(pixel_count, permutation):
+    for i in range(pixel_count - 1, 0, -1):
+        j = np.random.randint(i + 1)
+        permutation[i], permutation[j] = permutation[j], permutation[i]
+    return permutation
 
 
 def to_grayscale_2d(img_array):
