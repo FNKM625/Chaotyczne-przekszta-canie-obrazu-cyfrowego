@@ -48,12 +48,12 @@ def scramble_array(img_array, key, is_encrypt=True):
     return result_array
 
 
-def build_comparison_text(img_array, key, count=10):
+def build_comparison_text(img_array, key, wrong_key, count=10):
     height, width = img_array.shape[:2]
     limit = min(count, height)
 
     scrambled_array = scramble_array(img_array, key, True)
-    wrong_unscrambled_array = scramble_array(scrambled_array, key + 1, False)
+    wrong_unscrambled_array = scramble_array(scrambled_array, wrong_key, False)
 
     corr_orig_h, corr_orig_v = adjacent_pixel_correlation(img_array)
     corr_scr_h, corr_scr_v = adjacent_pixel_correlation(scrambled_array)
@@ -65,7 +65,7 @@ def build_comparison_text(img_array, key, count=10):
     lines.append("ETAP 1 - NAIWNY SCRAMBLING")
     lines.append("")
     lines.append(f"Klucz poprawny: {key}")
-    lines.append(f"Klucz błędny: {key + 1}")
+    lines.append(f"Klucz błędny: {wrong_key}")
     lines.append(f"Szerokość obrazu: {width}")
     lines.append("")
 

@@ -66,7 +66,7 @@ class ProjektGUI:
         btn_unscramble = tk.Button(frame_control, text="Unscramble", command=self.action_unscramble, bg="lightgreen")
         btn_unscramble.pack(side=tk.LEFT, padx=5)
         
-        btn_unscramble_wrong = tk.Button(frame_control, text="Unscramble zły klucz", command=lambda: self.action_unscramble(type=True), bg="red3")
+        btn_unscramble_wrong = tk.Button(frame_control, text="Unscramble zły klucz", command=lambda: self.action_unscramble(type="Wrong Key"), bg="red3")
         btn_unscramble_wrong.pack(side=tk.LEFT, padx=5)
  
         btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset, bg="lightblue")
@@ -75,8 +75,8 @@ class ProjektGUI:
         btn_mapping = tk.Button(frame_control, text="Pokaż odwzorowania", command=self.btn_show_mapping)
         btn_mapping.pack(side=tk.LEFT, padx=5)
         
-        btn_save_image = tk.Button(frame_control, text="Zapisz obraz", command=self.btn_save_image, bg="lightblue")
-        btn_save_image.pack(side=tk.LEFT, padx=5)
+        btn_save_files = tk.Button(frame_control, text="Zapisz pliki", command=self.btn_save_files, bg="lightblue")
+        btn_save_files.pack(side=tk.LEFT, padx=5)
         
     def create_image_panels(self):
         frame_image = tk.Frame(self.root)
@@ -176,6 +176,7 @@ class ProjektGUI:
         self.panel_scrambled.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
         self.panel_unscrambled.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
         self.panel_unscrambled_wrong.config(image="", text="Odtworzony (zły klucz)\n(Brak obrazu)", bg="lightgray")
+        
     def btn_get_original_image(self):
         path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
         if path:
@@ -186,45 +187,119 @@ class ProjektGUI:
         if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
-        
+
         key = self.key_validation(self.key_entry.get())
         if key is None:
             return
-        
+
+        wrong_key = self.key_validation(self.wrong_key_entry.get())
+        if wrong_key is None:
+            return
+
         stage = self.stage_selection.get()
-        
-        img = Image.open(self.path_original)
-        img_array = np.array(img)
-        
-        if stage == "1":
-            content = etap1.build_comparison_text(img_array, key, count=10)
-            self.show_text_window("Etap 1 - Przesunięcia", content)
-            
-        elif stage == "2" or stage == "3":            
-            if stage == "2":
-                content = etap2.build_comparison_text(img_array, key, count=10)
-                self.show_text_window("Etap 2 - Odwzorowania", content)
-            
+        mapping_file_path = self.get_mapping_file_path(stage, key, wrong_key)
+
+        if os.path.exists(mapping_file_path):
+            content = self.load_text_from_file(mapping_file_path)
+        else:
+            img = Image.open(self.path_original)
+            img_array = np.array(img)
+
+            if stage == "1":
+                content = etap1.build_comparison_text(img_array, key, wrong_key, count=10)
+                self.save_text_to_file(mapping_file_path, content)
+
+            elif stage == "2":
+                content = etap2.build_comparison_text(img_array, key, wrong_key, count=10)
+                self.save_text_to_file(mapping_file_path, content)
+
             elif stage == "3":
-                content = etap3.build_comparison_text(img_array, key, count=10)
-                self.show_text_window("Etap 3 - Hybryda", content)
+                content = etap3.build_comparison_text(img_array, key, wrong_key, count=10)
+                self.save_text_to_file(mapping_file_path, content)
 
-    def btn_save_image(self):
-        if not os.path.exists(self.path_scrambled):
-            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Scramble.")
-            return
-        if not os.path.exists(self.path_unscrambled):
-            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Unscramble.")
-            return
-        if not os.path.exists(self.path_unscrambled_wrong):
-            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Unscramble.")
-            return
+        if stage == "1":
+            self.show_text_window("Etap 1 - Przesunięcia", content)
+        elif stage == "2":
+            self.show_text_window("Etap 2 - Odwzorowania", content)
+        elif stage == "3":
+            self.show_text_window("Etap 3 - Hybryda", content)
 
-        actual_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        self.save_image(self.path_scrambled, "przeksztalcony", actual_time)
-        self.save_image(self.path_unscrambled, "odtworzony", actual_time)
-        
+    def btn_save_files(self):
+        window = tk.Toplevel(self.root)
+        window.title("Wybierz pliki do zapisania")
+        window.geometry("350x260")
+        window.resizable(False, False)
+        window.grab_set()
+
+        tk.Label(
+            window,
+            text="Wybierz co najmniej jeden plik do zapisania:",
+            font=("Arial", 11, "bold")
+        ).pack(pady=10)
+
+        save_scrambled = tk.BooleanVar(value=False)
+        save_unscrambled = tk.BooleanVar(value=False)
+        save_unscrambled_wrong = tk.BooleanVar(value=False)
+        save_mapping = tk.BooleanVar(value=False)
+
+        tk.Checkbutton(window, text="Scrambled", variable=save_scrambled).pack(anchor="w", padx=20, pady=5)
+        tk.Checkbutton(window, text="Unscrambled", variable=save_unscrambled).pack(anchor="w", padx=20, pady=5)
+        tk.Checkbutton(window, text="Unscrambled - zły klucz", variable=save_unscrambled_wrong).pack(anchor="w", padx=20, pady=5)
+        tk.Checkbutton(window, text="Odwzorowania (plik tekstowy)", variable=save_mapping).pack(anchor="w", padx=20, pady=5)
+
+        def confirm_save():
+            selected = []
+            
+            if save_scrambled.get():
+                if os.path.exists(self.path_scrambled):
+                    selected.append((self.path_scrambled, "przeksztalcony"))
+                else:
+                    messagebox.showwarning("Błąd", "Obraz Scrambled nie istnieje.")
+                    return
+
+            if save_unscrambled.get():
+                if os.path.exists(self.path_unscrambled):
+                    selected.append((self.path_unscrambled, "odtworzony"))
+                else:
+                    messagebox.showwarning("Błąd", "Obraz Unscrambled nie istnieje.")
+                    return
+
+            if save_unscrambled_wrong.get():
+                if os.path.exists(self.path_unscrambled_wrong):
+                    selected.append((self.path_unscrambled_wrong, "odtworzony_zly_klucz"))
+                else:
+                    messagebox.showwarning("Błąd", "Obraz odtworzony złym kluczem nie istnieje.")
+                    return
+                
+            if save_mapping.get():
+                stage = self.stage_selection.get()
+                key = self.key_validation(self.key_entry.get())
+                wrong_key = self.key_validation(self.wrong_key_entry.get())
+                mapping_file_path = self.get_mapping_file_path(stage, key, wrong_key)
+                
+                if os.path.exists(mapping_file_path):
+                    selected.append((mapping_file_path, "odwzorowania"))
+                else: 
+                    messagebox.showwarning("Błąd", "Plik z odwzorowaniami nie istnieje.")
+                    return
+
+            if not selected:
+                messagebox.showwarning("Błąd", "Zaznacz co najmniej jeden obraz do zapisania.")
+                return
+
+            actual_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            for source_path, default_name in selected:
+                self.save_file(source_path, default_name, actual_time)
+
+            window.destroy()
+
+        btn_frame = tk.Frame(window)
+        btn_frame.pack(pady=20)
+
+        tk.Button(btn_frame, text="Zapisz", command=confirm_save, bg="lightgreen", width=12).pack(side=tk.LEFT, padx=10)
+        tk.Button(btn_frame, text="Anuluj", command=window.destroy, bg="lightcoral", width=12).pack(side=tk.LEFT, padx=10)
+
     # --- FUNKCJE LOGICZNE ---
     def display_image(self, path, panel):
         img = Image.open(path)
@@ -241,16 +316,29 @@ class ProjektGUI:
             messagebox.showerror("Błąd", "Nieprawidłowy klucz! Wprowadź liczbę całkowitą.")
             return None
         
-    def save_image(self, source_path, default_name, actual_time):
-        default_filename = f"{default_name}_{actual_time}.png"
+    def save_file(self, source_path, default_name, actual_time):
+        default_filename = f"{default_name}_{actual_time}{os.path.splitext(source_path)[1]}"
 
-        save_path = filedialog.asksaveasfilename(initialdir=self.folder_save, initialfile=default_filename, defaultextension=".png", filetypes=[("PNG files", "*.png")])
+        save_path = filedialog.asksaveasfilename(initialdir=self.folder_save, initialfile=default_filename, defaultextension=os.path.splitext(source_path)[1], filetypes=[("All files", "*.*")])
         if save_path:
             try:
                 shutil.copy(source_path, save_path)
                 messagebox.showinfo("Sukces", f"Obraz zapisany jako: {save_path}")
             except Exception as e:
                 messagebox.showerror("Błąd", f"Nie można zapisać obrazu: {e}")
+    
+    def get_mapping_file_path(self, stage, key, wrong_key):
+        original_name = os.path.splitext(os.path.basename(self.path_original))[0]
+        filename = f"{original_name}_etap{stage}_correctkey{key}_wrongkey{wrong_key}.txt"
+        return os.path.join(self.folder_temp, filename)
+    
+    def save_text_to_file(self, file_path, content):
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+    
+    def load_text_from_file(self, file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
     
     # --- FUNKCJE ETAPÓW ---
     def action_scramble(self):
@@ -273,7 +361,7 @@ class ProjektGUI:
             etap3.hybrid_scrambling(self.path_original, self.path_scrambled, key)
             self.display_image(self.path_scrambled, self.panel_scrambled)
             
-    def action_unscramble(self, type=False):
+    def action_unscramble(self, type="Correct Key"):
         if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
@@ -281,26 +369,28 @@ class ProjektGUI:
             messagebox.showwarning("Błąd", "Nie ma obrazu do odszyfrowania! Najpierw użyj opcji Scramble.")
             return
         
-        if type:
+        if type == "Wrong Key":
             key = self.key_validation(self.wrong_key_entry.get())
             panel = self.panel_unscrambled_wrong
+            path = self.path_unscrambled_wrong
         else:
             key = self.key_validation(self.key_entry.get())
             panel = self.panel_unscrambled
-        
+            path = self.path_unscrambled
+
         if key is None:
             return        
         stage = self.stage_selection.get()
 
         if stage == "1":
-            etap1.naive_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, panel)
+            etap1.naive_scrambling(self.path_scrambled, path, key, is_encrypt=False)
+            self.display_image(path, panel)
         elif stage == "2":
-            etap2.pure_permutation(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, panel)
+            etap2.pure_permutation(self.path_scrambled, path, key, is_encrypt=False)
+            self.display_image(path, panel)
         elif stage == "3":
-            etap3.hybrid_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, panel)
+            etap3.hybrid_scrambling(self.path_scrambled, path, key, is_encrypt=False)
+            self.display_image(path, panel)
 
     def show_text_window(self, title, content):
         window = tk.Toplevel(self.root)

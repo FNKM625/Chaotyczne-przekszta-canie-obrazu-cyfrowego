@@ -61,7 +61,7 @@ def apply_hybrid_array(img_array, key, is_encrypt=True):
     return transformed.reshape(original_shape)
 
 
-def build_comparison_text(img_array, key, count=10):
+def build_comparison_text(img_array, key, wrong_key, count=10):
     original_shape = img_array.shape
 
     if len(original_shape) == 2:
@@ -72,13 +72,13 @@ def build_comparison_text(img_array, key, count=10):
     pixel_count = flat_pixels.shape[0]
 
     permutation_key, inverse_key = generate_permutation(pixel_count, key)
-    permutation_key1, inverse_key1 = generate_permutation(pixel_count, key + 1)
+    permutation_key1, inverse_key1 = generate_permutation(pixel_count, wrong_key)
 
     shift_key = generate_substitution_value(key)
-    shift_key1 = generate_substitution_value(key + 1)
+    shift_key1 = generate_substitution_value(wrong_key)
 
     scrambled_array = apply_hybrid_array(img_array, key, True)
-    wrong_unscrambled_array = apply_hybrid_array(scrambled_array, key + 1, False)
+    wrong_unscrambled_array = apply_hybrid_array(scrambled_array, wrong_key, False)
 
     corr_orig_h, corr_orig_v = adjacent_pixel_correlation(img_array)
     corr_scr_h, corr_scr_v = adjacent_pixel_correlation(scrambled_array)
@@ -91,9 +91,9 @@ def build_comparison_text(img_array, key, count=10):
     lines.append("ETAP 3 - HYBRYDA (PERMUTACJA + SUBSTYTUCJA)")
     lines.append("")
     lines.append(f"Klucz poprawny: {key}")
-    lines.append(f"Klucz błędny: {key + 1}")
+    lines.append(f"Klucz błędny: {wrong_key}")
     lines.append(f"Substytucja dla key: x -> (x + {shift_key}) mod 256")
-    lines.append(f"Substytucja dla key+1: x -> (x + {shift_key1}) mod 256")
+    lines.append(f"Substytucja dla wrong_key: x -> (x + {shift_key1}) mod 256")
     lines.append("")
 
     lines.append("1. Permutacja dla key")
@@ -108,7 +108,7 @@ def build_comparison_text(img_array, key, count=10):
     lines.append("")
     lines.append("3. Próba odtworzenia złym kluczem")
     for i in range(limit):
-        lines.append(f"P^-1_key+1(P_key({i})) = {inverse_key1[permutation_key[i]]}")
+        lines.append(f"P^-1_wrong_key(P_wrong_key({i})) = {inverse_key[permutation_key1[i]]}")
 
     lines.append("")
     lines.append("4. Przykład substytucji wartości")

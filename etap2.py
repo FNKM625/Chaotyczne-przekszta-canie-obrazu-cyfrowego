@@ -81,7 +81,7 @@ def build_mapping_text(permutation, inverse_permutation, key, count=10):
     return "\n".join(lines)
 
 
-def build_comparison_text(img_array, key, count=10):
+def build_comparison_text(img_array, key, wrong_key, count=10):
     original_shape = img_array.shape
 
     if len(original_shape) == 2:
@@ -92,10 +92,10 @@ def build_comparison_text(img_array, key, count=10):
     pixel_count = flat_pixels.shape[0]
 
     permutation_key, inverse_key = generate_permutation(pixel_count, key)
-    permutation_key1, inverse_key1 = generate_permutation(pixel_count, key + 1)
+    permutation_key1, inverse_key1 = generate_permutation(pixel_count, wrong_key)
 
     scrambled_array = apply_permutation_array(img_array, key, True)
-    wrong_unscrambled_array = apply_permutation_array(scrambled_array, key + 1, False)
+    wrong_unscrambled_array = apply_permutation_array(scrambled_array, wrong_key, False)
 
     corr_orig_h, corr_orig_v = adjacent_pixel_correlation(img_array)
     corr_scr_h, corr_scr_v = adjacent_pixel_correlation(scrambled_array)
@@ -108,7 +108,7 @@ def build_comparison_text(img_array, key, count=10):
     lines.append("ETAP 2 - CZYSTA PERMUTACJA")
     lines.append("")
     lines.append(f"Klucz poprawny: {key}")
-    lines.append(f"Klucz błędny: {key + 1}")
+    lines.append(f"Klucz błędny: {wrong_key}")
     lines.append("")
 
     lines.append("1. Permutacja dla key")
@@ -116,9 +116,9 @@ def build_comparison_text(img_array, key, count=10):
         lines.append(f"P_key({i}) = {permutation_key[i]}")
 
     lines.append("")
-    lines.append("2. Permutacja dla key + 1")
+    lines.append("2. Permutacja dla wrong_key")
     for i in range(limit):
-        lines.append(f"P_key+1({i}) = {permutation_key1[i]}")
+        lines.append(f"P_wrong_key({i}) = {permutation_key1[i]}")
 
     lines.append("")
     lines.append("3. Sprawdzenie poprawnego odtwarzania (key)")
@@ -126,9 +126,9 @@ def build_comparison_text(img_array, key, count=10):
         lines.append(f"P^-1_key(P_key({i})) = {inverse_key[permutation_key[i]]}")
 
     lines.append("")
-    lines.append("4. Próba odtworzenia złym kluczem (key + 1)")
+    lines.append("4. Próba odtworzenia złym kluczem (wrong_key)")
     for i in range(limit):
-        lines.append(f"P^-1_key+1(P_key({i})) = {inverse_key1[permutation_key[i]]}")
+        lines.append(f"P^-1_wrong_key(P_wrong_key({i})) = {inverse_key[permutation_key1[i]]}")
 
     lines.append("")
     lines.append("5. Korelacja sąsiednich pikseli")
