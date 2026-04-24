@@ -11,14 +11,16 @@ class ProjektGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Projekt M-II: Chaotyczne przekształcanie obrazu")
-        self.root.geometry("1000x600")
+        self.root.geometry("1300x600")
 
         self.folder_temp = "temp"
+        shutil.rmtree(self.folder_temp, ignore_errors=True)
         os.makedirs(self.folder_temp, exist_ok=True)
         self.path_original = None
         self.path_scrambled = os.path.join(self.folder_temp, "przeksztalcony.png")
         self.path_unscrambled = os.path.join(self.folder_temp, "odtworzony.png")
-        
+        self.path_unscrambled_wrong = os.path.join(self.folder_temp, "odtworzony_zly_klucz.png")
+
         self.folder_save = "save"
         os.makedirs(self.folder_save, exist_ok=True)
         self.folder_save = os.path.join(self.folder_save, "")
@@ -32,7 +34,8 @@ class ProjektGUI:
 
         try:
             img_logo = Image.open("UWB.png")
-            img_logo.thumbnail((40, 40)) 
+            img_logo.thumbnail((100,100))
+            img_logo = img_logo.resize((60,40)) 
             self.logo_tk_panel = ImageTk.PhotoImage(img_logo)
             
             label_logo = tk.Label(frame_control, image=self.logo_tk_panel)
@@ -51,12 +54,20 @@ class ProjektGUI:
         self.key_entry = tk.Entry(frame_control, width=10)
         self.key_entry.pack(side=tk.LEFT, padx=5)
         self.key_entry.insert(0, "42")
+        
+        tk.Label(frame_control, text="Zły klucz:").pack(side=tk.LEFT, padx=5)
+        self.wrong_key_entry = tk.Entry(frame_control, width=10)
+        self.wrong_key_entry.pack(side=tk.LEFT, padx=5)
+        self.wrong_key_entry.insert(0, "43")
 
-        btn_scramble = tk.Button(frame_control, text="Scramble", command=self.action_scramble, bg="lightcoral")
+        btn_scramble = tk.Button(frame_control, text="Scramble", command=self.action_scramble, bg="lightblue")
         btn_scramble.pack(side=tk.LEFT, padx=5)
             
         btn_unscramble = tk.Button(frame_control, text="Unscramble", command=self.action_unscramble, bg="lightgreen")
         btn_unscramble.pack(side=tk.LEFT, padx=5)
+        
+        btn_unscramble_wrong = tk.Button(frame_control, text="Unscramble zły klucz", command=lambda: self.action_unscramble(type=True), bg="red3")
+        btn_unscramble_wrong.pack(side=tk.LEFT, padx=5)
  
         btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset, bg="lightblue")
         btn_reset.pack(side=tk.LEFT, padx=5)
@@ -74,7 +85,7 @@ class ProjektGUI:
         panel_width = 300
         panel_height = 320
 
-    # Oryginał
+        # Oryginał
         self.frame_original = tk.LabelFrame(
             frame_image,
             text="Oryginał",
@@ -136,6 +147,27 @@ class ProjektGUI:
             bg="lightgray"
         )
         self.panel_unscrambled.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Unscrambled wrong
+        self.frame_unscrambled_wrong = tk.LabelFrame(
+            frame_image,
+            text="Unscrambled (zły klucz)",
+            bd=2,
+            relief="solid",
+            width=panel_width,
+            height=panel_height,
+            font=("Arial", 11, "bold"),
+            labelanchor="n"
+        )
+        self.frame_unscrambled_wrong.pack(side=tk.LEFT, expand=True, padx=10, pady=10)
+        self.frame_unscrambled_wrong.pack_propagate(False)
+
+        self.panel_unscrambled_wrong = tk.Label(
+            self.frame_unscrambled_wrong,
+            text="Brak obrazu",
+            bg="lightgray"
+        )
+        self.panel_unscrambled_wrong.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     # --- FUNKCJE BUTTON ---
     def btn_reset(self):
@@ -143,7 +175,7 @@ class ProjektGUI:
         self.panel_original.config(image="", text="Oryginał\n(Brak obrazu)", bg="lightgray")
         self.panel_scrambled.config(image="", text="Przekształcony\n(Brak obrazu)", bg="lightgray")
         self.panel_unscrambled.config(image="", text="Odtworzony\n(Brak obrazu)", bg="lightgray")
-
+        self.panel_unscrambled_wrong.config(image="", text="Odtworzony (zły klucz)\n(Brak obrazu)", bg="lightgray")
     def btn_get_original_image(self):
         path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
         if path:
@@ -165,21 +197,10 @@ class ProjektGUI:
         img_array = np.array(img)
         
         if stage == "1":
-            height, width = img_array.shape[:2]
-            
             content = etap1.build_comparison_text(img_array, key, count=10)
             self.show_text_window("Etap 1 - Przesunięcia", content)
             
-        elif stage == "2" or stage == "3":
-            originalshape = img_array.shape
-            
-            if len(originalshape) == 2:
-                flatpixels = img_array.reshape(-1, 1)
-            else:
-                flatpixels = img_array.reshape(-1, originalshape[2])
-
-            pixelcount = flatpixels.shape[0]
-            
+        elif stage == "2" or stage == "3":            
             if stage == "2":
                 content = etap2.build_comparison_text(img_array, key, count=10)
                 self.show_text_window("Etap 2 - Odwzorowania", content)
@@ -195,7 +216,10 @@ class ProjektGUI:
         if not os.path.exists(self.path_unscrambled):
             messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Unscramble.")
             return
-        
+        if not os.path.exists(self.path_unscrambled_wrong):
+            messagebox.showwarning("Błąd", "Nie ma obrazu do zapisania! Najpierw użyj opcji Unscramble.")
+            return
+
         actual_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         self.save_image(self.path_scrambled, "przeksztalcony", actual_time)
@@ -249,7 +273,7 @@ class ProjektGUI:
             etap3.hybrid_scrambling(self.path_original, self.path_scrambled, key)
             self.display_image(self.path_scrambled, self.panel_scrambled)
             
-    def action_unscramble(self):
+    def action_unscramble(self, type=False):
         if not self.path_original:
             messagebox.showwarning("Błąd", "Najpierw wczytaj obraz!")
             return
@@ -257,20 +281,26 @@ class ProjektGUI:
             messagebox.showwarning("Błąd", "Nie ma obrazu do odszyfrowania! Najpierw użyj opcji Scramble.")
             return
         
-        key = self.key_validation(self.key_entry.get())
+        if type:
+            key = self.key_validation(self.wrong_key_entry.get())
+            panel = self.panel_unscrambled_wrong
+        else:
+            key = self.key_validation(self.key_entry.get())
+            panel = self.panel_unscrambled
+        
         if key is None:
             return        
         stage = self.stage_selection.get()
 
         if stage == "1":
             etap1.naive_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+            self.display_image(self.path_unscrambled, panel)
         elif stage == "2":
             etap2.pure_permutation(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+            self.display_image(self.path_unscrambled, panel)
         elif stage == "3":
             etap3.hybrid_scrambling(self.path_scrambled, self.path_unscrambled, key, is_encrypt=False)
-            self.display_image(self.path_unscrambled, self.panel_unscrambled)
+            self.display_image(self.path_unscrambled, panel)
 
     def show_text_window(self, title, content):
         window = tk.Toplevel(self.root)
