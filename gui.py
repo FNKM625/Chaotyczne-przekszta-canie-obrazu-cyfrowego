@@ -72,13 +72,13 @@ class ProjektGUI:
         btn_unscramble_wrong = tk.Button(frame_control, text="Unscramble zły klucz", command=lambda: self.action_unscramble(type="Wrong Key"), bg="red3")
         btn_unscramble_wrong.pack(side=tk.LEFT, padx=5)
  
-        btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset, bg="lightblue")
+        btn_reset = tk.Button(frame_control, text="Reset", command=self.btn_reset)
         btn_reset.pack(side=tk.LEFT, padx=5)
         
         btn_mapping = tk.Button(frame_control, text="Pokaż odwzorowania", command=self.btn_show_mapping)
         btn_mapping.pack(side=tk.LEFT, padx=5)
         
-        btn_save_files = tk.Button(frame_control, text="Zapisz pliki", command=self.btn_save_files, bg="lightblue")
+        btn_save_files = tk.Button(frame_control, text="Zapisz pliki", command=self.btn_save_files)
         btn_save_files.pack(side=tk.LEFT, padx=5)
         
     def create_image_panels(self):
