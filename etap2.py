@@ -8,7 +8,7 @@ def generate_permutation(pixel_count, key):
     permutation = np.arange(pixel_count)
     permutation = fisher_yates_shuffle(pixel_count, permutation)
     
-    inverse_permutation = np.argsort(permutation)
+    inverse_permutation = build_inverse_permutation(permutation)
     return permutation, inverse_permutation
 
 
@@ -17,6 +17,12 @@ def fisher_yates_shuffle(pixel_count, permutation):
         j = np.random.randint(pixel_count - i)
         permutation[i], permutation[j] = permutation[j], permutation[i]
     return permutation
+
+def build_inverse_permutation(permutation):
+    inverse = np.empty_like(permutation)
+    for i in range(len(permutation)):
+        inverse[permutation[i]] = i
+    return inverse
 
 
 def to_grayscale_2d(img_array):
